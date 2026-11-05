@@ -26,7 +26,7 @@ admin.initializeApp({
 
 // MongoDb
 
-const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.rbn9qen.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
+const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.rbn9qen.mongodb.net/?appName=Cluster0`;
 
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
 const client = new MongoClient(uri, {
@@ -73,27 +73,27 @@ async function run() {
     };
 
     // Admin Middleware
-const verifyAdmin = async (req, res, next) => {
-  try {
-    // Check if decoded exists and contains email
-    const email = req.decoded?.email;
-    if (!email) {
-      return res.status(401).send({ message: "Unauthorized: Email missing" });
-    }
+    const verifyAdmin = async (req, res, next) => {
+      try {
+        // Check if decoded exists and contains email
+        const email = req.decoded?.email;
+        if (!email) {
+          return res.status(401).send({ message: "Unauthorized: Email missing" });
+        }
 
-    const query = { email };
-    const user = await usersCollection.findOne(query);
+        const query = { email };
+        const user = await usersCollection.findOne(query);
 
-    if (!user || user.role !== "admin") {
-      return res.status(403).send({ message: "Forbidden: Admins only" });
-    }
+        if (!user || user.role !== "admin") {
+          return res.status(403).send({ message: "Forbidden: Admins only" });
+        }
 
-    next();
-  } catch (error) {
-    console.error("verifyAdmin error:", error);
-    res.status(500).send({ message: "Internal Server Error in verifyAdmin" });
-  }
-};
+        next();
+      } catch (error) {
+        console.error("verifyAdmin error:", error);
+        res.status(500).send({ message: "Internal Server Error in verifyAdmin" });
+      }
+    };
 
 
     // Vendor Middleware
@@ -237,7 +237,6 @@ const verifyAdmin = async (req, res, next) => {
         }
 
         if (status) {
-          // Convert status to lowercase to match stored format (if needed)
           query.status = status.toLowerCase(); // assuming you store 'approved' in lowercase
         }
 
@@ -335,7 +334,7 @@ const verifyAdmin = async (req, res, next) => {
         const cursor = productCollection
           .find({ status: "approved" })
           .sort({ _id: -1 })
-          .limit(6);
+          .limit(8);
 
         const cards = await cursor.toArray();
         res.send(cards);
@@ -546,7 +545,7 @@ const verifyAdmin = async (req, res, next) => {
 
     // Post Product : POST API
 
-    app.post("/products",verifyFBToken, verifyVendor, async (req, res) => {
+    app.post("/products", verifyFBToken, verifyVendor, async (req, res) => {
       try {
         const newProduct = req.body;
         const result = await productCollection.insertOne(newProduct);
