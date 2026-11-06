@@ -16,9 +16,10 @@ const port = process.env.PORT || 5000;
 app.use(cors());
 app.use(express.json());
 
-const decodedKey = Buffer.from(process.env.FB_SERVICE_KEY, 'base64').toString('utf8');
+const decodedKey = Buffer.from(process.env.FB_SERVICE_KEY, "base64").toString(
+  "utf8",
+);
 const serviceAccount = JSON.parse(decodedKey);
-
 
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
@@ -78,7 +79,9 @@ async function run() {
         // Check if decoded exists and contains email
         const email = req.decoded?.email;
         if (!email) {
-          return res.status(401).send({ message: "Unauthorized: Email missing" });
+          return res
+            .status(401)
+            .send({ message: "Unauthorized: Email missing" });
         }
 
         const query = { email };
@@ -91,10 +94,11 @@ async function run() {
         next();
       } catch (error) {
         console.error("verifyAdmin error:", error);
-        res.status(500).send({ message: "Internal Server Error in verifyAdmin" });
+        res
+          .status(500)
+          .send({ message: "Internal Server Error in verifyAdmin" });
       }
     };
-
 
     // Vendor Middleware
 
@@ -187,7 +191,7 @@ async function run() {
       try {
         const result = await usersCollection.updateOne(
           { _id: new ObjectId(id) },
-          { $set: { role: role } }
+          { $set: { role: role } },
         );
 
         if (result.modifiedCount > 0) {
@@ -289,7 +293,7 @@ async function run() {
       try {
         const result = await adCollection.updateOne(
           { _id: new ObjectId(id) },
-          { $set: { status } }
+          { $set: { status } },
         );
 
         if (result.modifiedCount > 0) {
@@ -312,7 +316,7 @@ async function run() {
 
         const result = await adCollection.updateOne(
           { _id: new ObjectId(adId) },
-          { $set: updatedFields }
+          { $set: updatedFields },
         );
 
         if (result.matchedCount === 0) {
@@ -436,7 +440,7 @@ async function run() {
         const updatedProduct = req.body;
         const result = await productCollection.updateOne(
           { _id: new ObjectId(id) },
-          { $set: updatedProduct }
+          { $set: updatedProduct },
         );
 
         res.send({ success: result.modifiedCount > 0 });
@@ -462,7 +466,7 @@ async function run() {
 
         const result = await productCollection.updateOne(
           { _id: new ObjectId(id) },
-          { $set: updateFields }
+          { $set: updateFields },
         );
 
         res.send({ updated: result.modifiedCount > 0 });
@@ -723,9 +727,14 @@ async function run() {
           .aggregate([
             { $match: { userEmail: email } },
             {
+              $addFields: {
+                productObjectId: { $toObjectId: "$productId" },
+              },
+            },
+            {
               $lookup: {
                 from: "products",
-                localField: "productId",
+                localField: "productObjectId",
                 foreignField: "_id",
                 as: "productDetails",
               },
@@ -733,6 +742,7 @@ async function run() {
             { $unwind: "$productDetails" },
             {
               $project: {
+                _id: 1,
                 productName: "$productDetails.productName",
                 currentPrice: "$productDetails.price",
                 marketName: "$productDetails.marketName",
@@ -830,7 +840,6 @@ async function run() {
     // console.log(
     //   "Pinged your deployment. You successfully connected to MongoDB!"
     // );
-
   } finally {
     // Ensures that the client will close when you finish/error
     // await client.close();
