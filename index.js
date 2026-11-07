@@ -106,7 +106,7 @@ async function run() {
       const email = req.decoded.email;
       const query = { email };
       const user = await usersCollection.findOne(query);
-      if (!user || user.role !== "rider") {
+      if (!user || user.role !== "vendor") {
         return res.status(403).send({ message: "forbidden access" });
       }
       next();
@@ -207,7 +207,7 @@ async function run() {
 
     // USERS ROLE : GET API
 
-    app.get("/users/:email/role", async (req, res) => {
+    app.get("/users/:email/role", verifyFBToken, async (req, res) => {
       try {
         const email = req.params.email;
 
@@ -334,9 +334,8 @@ async function run() {
 
     app.get("/marketcards", async (req, res) => {
       try {
-        // Only get approved products, sorted by latest (_id: -1), limited to 6
         const cursor = productCollection
-          .find({ status: "approved" })
+          .find({ status: "approved", stock: { $gt: 0 } })
           .sort({ _id: -1 })
           .limit(8);
 
@@ -410,6 +409,7 @@ async function run() {
               vendorEmail: 1,
               imageUrl: 1,
               latestPrice: 1,
+              stock: 1,
               date: 1,
               status: 1,
             },
@@ -511,9 +511,8 @@ async function run() {
         }
 
         const query = userEmail ? { vendorEmail: userEmail } : {};
-        const options = { sort: { _id: -1 } };
 
-        const products = await productCollection.find(query, options).toArray();
+        const products = await productCollection.find(query).toArray();
         res.send(products);
       } catch (error) {
         console.error("Error fetching products:", error);
@@ -762,11 +761,10 @@ async function run() {
     app.get("/dashboard/vendor/:email", async (req, res) => {
       try {
         const email = req.params.email;
-
         // Total products and out-of-stock count
         const productStats = await productCollection
           .aggregate([
-            { $match: { userEmail: email } },
+            { $match: { vendorEmail: email } },
             {
               $group: {
                 _id: null,
@@ -776,7 +774,6 @@ async function run() {
             },
           ])
           .toArray();
-
         // Recent 3 products
         const recentProducts = await productCollection
           .find({ userEmail: email })
@@ -848,7 +845,7 @@ async function run() {
 run().catch(console.dir);
 
 app.get("/", (req, res) => {
-  res.send("Product Server is running");
+  res.json({ message: "Product Server is running" });
 });
 
 app.listen(port, () => {
